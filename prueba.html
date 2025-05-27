@@ -93,11 +93,12 @@
                 const encoder = new TextEncoder();
 
                 escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x40])); // ESC @
-                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x01])); // Center
+                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x00])); // left
+
+                //header
                 escPos = appendBytes(escPos, encoder.encode("EMPRESA DE BUSES\n"));
                 escPos = appendBytes(escPos, encoder.encode("RUT: 12345678-9\n"));
-                escPos = appendBytes(escPos, encoder.encode("Boleta Electrónica\n\n"));
-                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x00])); // Left
+                escPos = appendBytes(escPos, encoder.encode("Boleta Electronica\n\n"));
 
                 const lines = [
                     `Boleto: ${data.boleto}`,
@@ -111,8 +112,8 @@
                     `Estado: ${data.estado}`,
                     `Terminal: ${data.terminal}`,
                     `Total: $${data.totalTransaccion}`,
-                    `Transacción: ${data.codigoTransaccion}`,
-                    `Autorización: ${data.codigoAutorizacion}`,
+                    `Transaccion: ${data.codigoTransaccion}`,
+                    `Autorizacion: ${data.codigoAutorizacion}`,
                     `Tarjeta: ${data.tipoTarjeta}`,
                 ];
                 lines.forEach(line => {
@@ -123,16 +124,23 @@
 
                 // Barcode (Code128)
                 if (data.boleto) {
-                    escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x68, 0x50])); // Height
-                    escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x77, 0x02])); // Width
-                    escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x4B, 0x49, data.boleto.length]));
+                    escPos = appendBytes(escPos, encoder.encode("Codigo de Barras: " + data.boleto + "\n\n"));
+                    
+                    // Configuración del código de barras
+                    escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x68, 0x50])); // Altura del código de barras
+                    escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x77, 0x02])); // Ancho del código de barras
+                    escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x48, 0x02])); // Mostrar texto debajo del código
+                    escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x6B, 0x49, data.boleto.length + 2])); // Code128
+                    escPos = appendBytes(escPos, new Uint8Array([0x7B, 0x42])); // Inicio del código B
                     escPos = appendBytes(escPos, encoder.encode(data.boleto));
-                    escPos = appendBytes(escPos, new Uint8Array([0x00]));
+                    escPos = appendBytes(escPos, new Uint8Array([0x00])); // Terminador
                     escPos = appendBytes(escPos, encoder.encode("\n\n"));
                 }
 
-                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x01])); // Center
+                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x00])); //left
                 escPos = appendBytes(escPos, encoder.encode("¡Gracias por preferirnos!\n\n"));
+
+                //siguiente boleta
                 escPos = appendBytes(escPos, new Uint8Array([0x0A, 0x0A, 0x0A, 0x0A])); // Avanzar 4 líneas
                 escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x56, 0x00])); // Cut paper
                 return escPos;
@@ -148,29 +156,29 @@
 
             function displayPreview(data) {
                 const text = `
-EMPRESA DE BUSES
-RUT: 12345678-9
-Boleta Electrónica
+                    EMPRESA DE BUSES
+                    RUT: 12345678-9
+                    Boleta Electronica
 
-Boleto: ${data.boleto}
-Reserva: ${data.reserva}
-ID: ${data.id}
-RUT: ${data.rut}
-Id Bus: ${data.idBus}
-Destino: ${data.destino}
-Fecha: ${data.fechaViaje}
-Asiento: ${data.asiento}
-Estado: ${data.estado}
-Terminal: ${data.terminal}
-Total: $${data.totalTransaccion}
-Transacción: ${data.codigoTransaccion}
-Autorización: ${data.codigoAutorizacion}
-Tarjeta: ${data.tipoTarjeta}
-----------------------------------------
-Código de Barras: ${data.boleto}
+                    Boleto: ${data.boleto}
+                    Reserva: ${data.reserva}
+                    ID: ${data.id}
+                    RUT: ${data.rut}
+                    Id Bus: ${data.idBus}
+                    Destino: ${data.destino}
+                    Fecha: ${data.fechaViaje}
+                    Asiento: ${data.asiento}
+                    Estado: ${data.estado}
+                    Terminal: ${data.terminal}
+                    Total: $${data.totalTransaccion}
+                    Transaccion: ${data.codigoTransaccion}
+                    Autorizacion: ${data.codigoAutorizacion}
+                    Tarjeta: ${data.tipoTarjeta}
+                    -------------------------------------
+                    Codigo de Barras: ${data.boleto}
 
-¡Gracias por preferirnos!
-`;
+                    ¡Gracias por preferirnos!
+                    `;
                 $('#ticketContentPreview').text(text);
             }
 
