@@ -31,6 +31,7 @@
             /* Para mostrar los saltos de línea */
             font-size: 0.9em;
             color: #343a40;
+            text-align: left;
         }
 
         h2 {
@@ -94,25 +95,15 @@
 
                 // Inicializar impresora
                 escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x40])); // ESC @ - Reset printer
-                
+
                 // Configurar alineación izquierda
                 escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x00])); // ESC a 0 - Left alignment
 
-                // Encabezado con texto grande centrado
-                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x01])); // Centrar
-                escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x21, 0x11])); // Texto doble altura y ancho
-                escPos = appendBytes(escPos, encoder.encode("EMPRESA DE BUSES\n"));
-
-                // Volver a tamaño normal y alineación izquierda
-                escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x21, 0x00])); // Size normal
-                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x00])); // Align left
-
-                // Datos normales
-                escPos = appendBytes(escPos, encoder.encode("\n"));
-                escPos = appendBytes(escPos, encoder.encode("RUT: 12345678-9\n"));
-                escPos = appendBytes(escPos, encoder.encode("Boleta Electronica\n\n"));
-
                 const lines = [
+                    "EMPRESA DE BUSES",
+                    "RUT: 12345678-9",
+                    "Boleta Electronica",
+                    "",
                     `Boleto: ${data.boleto}`,
                     `Reserva: ${data.reserva}`,
                     `ID: ${data.id}`,
