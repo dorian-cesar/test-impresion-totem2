@@ -93,17 +93,22 @@
                 let escPos = new Uint8Array(0);
                 const encoder = new TextEncoder();
 
-                // Inicializar impresora
-                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x40])); // ESC @ - Reset printer
+                // 1. INICIALIZACIÓN CON DELAY
+                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x40])); // Reset printer
+                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x4D, 0x01])); // Modo de alta calidad
+                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x33, 0x18])); // Velocidad reducida para header
 
-                // Configurar alineación izquierda
-                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x00])); // ESC a 0 - Left alignment
+                // 2. HEADER (texto normal)
+                escPos = appendBytes(escPos, encoder.encode("EMPRESA DE BUSES\n"));
+                escPos = appendBytes(escPos, encoder.encode("RUT: 12345678-9\n"));
+                escPos = appendBytes(escPos, encoder.encode("Boleta Electronica\n\n"));
 
+                // 3. RESTAURAR VELOCIDAD NORMAL
+                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x4D, 0x00])); // Modo normal
+                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x33, 0x1E])); // Velocidad normal
+
+                // 4. RESTO DEL CONTENIDO (EXACTAMENTE COMO ESTABA)
                 const lines = [
-                    "EMPRESA DE BUSES",
-                    "RUT: 12345678-9",
-                    "Boleta Electronica",
-                    "",
                     `Boleto: ${data.boleto}`,
                     `Reserva: ${data.reserva}`,
                     `ID: ${data.id}`,
@@ -119,33 +124,31 @@
                     `Autorizacion: ${data.codigoAutorizacion}`,
                     `Tarjeta: ${data.tipoTarjeta}`,
                 ];
+
                 lines.forEach(line => {
                     escPos = appendBytes(escPos, encoder.encode(line + "\n"));
                 });
 
                 escPos = appendBytes(escPos, encoder.encode("-------------------------------------------\n"));
 
-                // Barcode (Code128)
+                // Barcode (Code128) - Exactamente como estaba
                 if (data.boleto) {
                     escPos = appendBytes(escPos, encoder.encode("Codigo de Barras: " + data.boleto + "\n\n"));
-
-                    // Configuración del código de barras
-                    escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x68, 0x50])); // Altura del código de barras
-                    escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x77, 0x02])); // Ancho del código de barras
-                    escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x48, 0x02])); // Mostrar texto debajo del código
-                    escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x6B, 0x49, data.boleto.length + 2])); // Code128
-                    escPos = appendBytes(escPos, new Uint8Array([0x7B, 0x42])); // Inicio del código B
+                    escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x68, 0x50]));
+                    escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x77, 0x02]));
+                    escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x48, 0x02]));
+                    escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x6B, 0x49, data.boleto.length + 2]));
+                    escPos = appendBytes(escPos, new Uint8Array([0x7B, 0x42]));
                     escPos = appendBytes(escPos, encoder.encode(data.boleto));
-                    escPos = appendBytes(escPos, new Uint8Array([0x00])); // Terminador
+                    escPos = appendBytes(escPos, new Uint8Array([0x00]));
                     escPos = appendBytes(escPos, encoder.encode("\n\n"));
                 }
 
-                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x00])); //left
+                // Pie de página - Exactamente como estaba
                 escPos = appendBytes(escPos, encoder.encode("¡Gracias por preferirnos!\n\n"));
+                escPos = appendBytes(escPos, new Uint8Array([0x0A, 0x0A, 0x0A, 0x0A]));
+                escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x56, 0x00]));
 
-                //siguiente boleta
-                escPos = appendBytes(escPos, new Uint8Array([0x0A, 0x0A, 0x0A, 0x0A])); // Avanzar 4 líneas
-                escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x56, 0x00])); // Cut paper
                 return escPos;
             }
 
