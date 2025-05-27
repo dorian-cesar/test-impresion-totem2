@@ -1,114 +1,236 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
-    <title>Impresión de Prueba RawBT</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Imprimir Boleto RawBT</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        xintegrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <style>
         body {
-            font-family: sans-serif;
-            padding: 40px;
-            text-align: center;
+            padding: 20px;
+            background-color: #f8f9fa;
         }
-        button {
-            font-size: 18px;
-            padding: 15px 30px;
-            background-color: #007bff;
-            color: white;
-            border: none;
+
+        .container {
+            max-width: 600px;
+            background-color: #ffffff;
+            padding: 30px;
             border-radius: 8px;
-            cursor: pointer;
-            margin: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
-        .status {
+
+        .ticket-preview {
+            background-color: #e9ecef;
+            border: 1px dashed #6c757d;
+            padding: 20px;
             margin-top: 20px;
-            padding: 15px;
-            border-radius: 5px;
+            font-family: 'Courier New', Courier, monospace;
+            white-space: pre-wrap;
+            /* Para mostrar los saltos de línea */
+            font-size: 0.9em;
+            color: #343a40;
+            text-align: left;
         }
-        .success {
-            background-color: #d4edda;
-            color: #155724;
-        }
-        .error {
-            background-color: #f8d7da;
-            color: #721c24;
+
+        h2 {
+            color: #007bff;
         }
     </style>
 </head>
+
 <body>
-    <h2>Prueba de Impresión RawBT</h2>
-    <button id="printBtn">Imprimir Ticket de Prueba</button>
-    <div id="statusMsg" class="status"></div>
+    <div class="container">
+        <h2 class="mb-4 text-center">Impresión de Boleto con RawBT</h2>
+        <p class="text-center">Haz clic en el botón para enviar el boleto a imprimir usando RawBT.</p>
+
+        <div class="d-grid gap-2">
+            <button id="printTicketBtn" class="btn btn-primary btn-lg">
+                <i class="bi bi-printer"></i> Imprimir Boleto
+            </button>
+        </div>
+        <p>v - 1</p>
+        <hr>
+
+        <h5 class="mt-4 text-center">Previsualización del Contenido (Texto Plano)</h5>
+        <div id="ticketContentPreview" class="ticket-preview">
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        xintegrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1bK7sW+V9iQ5SULX90oM5YDFY9jV6n2E7N"
+        crossorigin="anonymous"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 
     <script>
-        // Función para mostrar estado
-        function showStatus(message, isError = false) {
-            const statusDiv = document.getElementById('statusMsg');
-            statusDiv.textContent = message;
-            statusDiv.className = isError ? 'status error' : 'status success';
-        }
+        $(document).ready(function () {
+            const ticketData = {
+                empresa: "EMPRESA DE BUSES",
+                rutEmpresa: "RUT: 12345678-9",
+                boleta: "Boleta Electronica",
+                boleto: "KP10332",
+                reserva: "TS250527105448709VIFX",
+                id: "7597",
+                rut: "Sin RUT",
+                idBus: "60959544",
+                destino: "Santiago",
+                fechaViaje: "2025-05-29",
+                asiento: "11",
+                estado: "Generado Manualmente",
+                terminal: "12345678",
+                totalTransaccion: "3996",
+                codigoTransaccion: "SIM908264",
+                codigoAutorizacion: "128302",
+                tipoTarjeta: "CR"
+            };
 
-        // Función para generar comandos ESC/POS
-        function generateTestTicket() {
-            const commands = [];
-            const encoder = new TextEncoder();
-            
-            // 1. Comandos de inicialización CRÍTICOS
-            commands.push(new Uint8Array([0x1B, 0x40])); // Inicializar impresora
-            commands.push(new Uint8Array([0x1B, 0x4D, 0x01])); // Modo de alta calidad
-            commands.push(new Uint8Array([0x1B, 0x33, 0x18])); // Velocidad reducida
-            
-            // 2. Encabezado con formato simple
-            commands.push(encoder.encode("EMPRESA DE BUSES\n"));
-            commands.push(encoder.encode("RUT: 12345678-9\n"));
-            commands.push(encoder.encode("----------------\n\n"));
-            
-            // 3. Restaurar configuración normal
-            commands.push(new Uint8Array([0x1B, 0x4D, 0x00])); // Modo normal
-            commands.push(new Uint8Array([0x1B, 0x33, 0x1E])); // Velocidad normal
-            
-            // 4. Finalización
-            commands.push(new Uint8Array([0x1D, 0x56, 0x00])); // Corte de papel
-            
-            // Combinar todos los comandos
-            let combined = new Uint8Array(0);
-            commands.forEach(cmd => {
-                const temp = new Uint8Array(combined.length + cmd.length);
-                temp.set(combined);
-                temp.set(cmd, combined.length);
-                combined = temp;
-            });
-            
-            return combined;
-        }
-
-        // Función para imprimir
-        document.getElementById("printBtn").addEventListener("click", () => {
-            try {
-                showStatus("Preparando datos para imprimir...");
-                
-                const escPosData = generateTestTicket();
-                const binaryString = Array.from(escPosData).map(byte => {
-                    return String.fromCharCode(byte);
-                }).join('');
-                
-                const base64Data = btoa(binaryString);
-                const rawbtUrl = `rawbt:base64,${base64Data}`;
-                
-                showStatus("Enviando a la impresora...");
-                
-                // Abrir RawBT con timeout
-                window.location.href = rawbtUrl;
-                
-                setTimeout(() => {
-                    showStatus("Impresión enviada correctamente");
-                }, 1000);
-                
-            } catch (error) {
-                showStatus(`Error: ${error.message}`, true);
-                console.error("Error de impresión:", error);
+            function appendBytes(arr1, arr2) {
+                const merged = new Uint8Array(arr1.length + arr2.length);
+                merged.set(arr1);
+                merged.set(arr2, arr1.length);
+                return merged;
             }
+
+            function generateEscPosCommands(data) {
+                let escPos = new Uint8Array(0);
+                const encoder = new TextEncoder(); // Por defecto, TextEncoder usa UTF-8
+
+                // 1. Inicializar impresora (ESC @)
+                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x40])); 
+
+                // 2. **CRÍTICO:** Añadir múltiples saltos de línea o bytes nulos como "padding"
+                // Esto da a la impresora tiempo para procesar el reset y estabilizar su buffer.
+                // Prueba con 2, 3 o 4 saltos de línea. También puedes probar con bytes nulos (0x00).
+                escPos = appendBytes(escPos, new Uint8Array([0x0A, 0x0A, 0x0A, 0x0A])); // Avanzar 4 líneas
+                escPos = appendBytes(escPos, encoder.encode("\n\n\n")); // Tres saltos de línea
+                escPos = appendBytes(escPos, new Uint8Array([0x0A, 0x0A, 0x0A, 0x0A])); // Avanzar 4 líneas
+
+                // 3. Configurar la página de códigos de caracteres (Code Page)
+                // Esto es FUNDAMENTAL para que los caracteres se impriman correctamente
+                // y no se "corten" o se muestren mal.
+                // 0x13 es para CP858 (Europa Occidental, soporta 'ñ', tildes, etc.)
+                // Si esto no funciona, prueba con 0x06 (CP437, más básico).
+                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x74, 0x13])); // ESC t n
+
+                // 4. Configurar alineación izquierda (aplica a todo el texto por defecto)
+                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x00])); // ESC a 0
+
+                // 5. Definir todas las líneas de texto a imprimir
+                const lines = [
+                    `${data.empresa}`,
+                    `${data.rutEmpresa}`,
+                    `${data.boleta}`,
+                    `Boleto: ${data.boleto}`,
+                    `Reserva: ${data.reserva}`,
+                    `ID: ${data.id}`,
+                    `RUT: ${data.rut}`,
+                    `Id Bus: ${data.idBus}`,
+                    `Destino: ${data.destino}`,
+                    `Fecha: ${data.fechaViaje}`,
+                    `Asiento: ${data.asiento}`,
+                    `Estado: ${data.estado}`,
+                    `Terminal: ${data.terminal}`,
+                    `Total: $${data.totalTransaccion}`,
+                    `Transaccion: ${data.codigoTransaccion}`,
+                    `Autorizacion: ${data.codigoAutorizacion}`,
+                    `Tarjeta: ${data.tipoTarjeta}`,
+                ];
+                
+                // 6. Añadir cada línea a los comandos ESC/POS
+                lines.forEach(line => {
+                    escPos = appendBytes(escPos, encoder.encode(line + "\n"));
+                });
+
+                // Línea divisoria
+                escPos = appendBytes(escPos, encoder.encode("-------------------------------------------\n"));
+
+                // Barcode (Code128)
+                if (data.boleto) {
+                    escPos = appendBytes(escPos, encoder.encode("Codigo de Barras: " + data.boleto + "\n\n"));
+
+                    // Configuración del código de barras
+                    escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x68, 0x50])); // GS h n - Altura del código de barras (80 puntos)
+                    escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x77, 0x02])); // GS w n - Ancho del módulo (2 puntos)
+                    escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x48, 0x02])); // GS H n - Mostrar texto debajo del código (0x02 = abajo)
+                    
+                    // Comando Code128: GS k m d1...dk NUL
+                    // m = 0x49 (73 decimal) para Code128
+                    // N = longitud de los datos a codificar
+                    // Los datos para Code128 a menudo requieren un prefijo para indicar el Code Set (ej. {B para set B)
+                    const barcodeContent = `{B${data.boleto}`; // Prefijo {B para Code Set B
+                    
+                    // La longitud debe incluir el prefijo {B
+                    escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x6B, 0x49, barcodeContent.length])); 
+                    escPos = appendBytes(escPos, encoder.encode(barcodeContent));
+                    // El terminador 0x00 es a menudo necesario para Code128
+                    escPos = appendBytes(escPos, new Uint8Array([0x00])); 
+                    
+                    escPos = appendBytes(escPos, encoder.encode("\n\n")); // Saltos de línea después del código de barras
+                }
+
+                // Mensaje final
+                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x01])); // ESC a 1 - Centrar
+                escPos = appendBytes(escPos, encoder.encode("¡Gracias por preferirnos!\n\n"));
+
+                // Avance de papel y corte
+                escPos = appendBytes(escPos, new Uint8Array([0x0A, 0x0A, 0x0A, 0x0A])); // Avanzar 4 líneas
+                escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x56, 0x00])); // GS V 0 - Cortar papel
+                
+                return escPos;
+            }
+
+            function uint8ToBase64(uint8arr) {
+                let binary = "";
+                for (let i = 0; i < uint8arr.length; i++) {
+                    binary += String.fromCharCode(uint8arr[i]);
+                }
+                return btoa(binary);
+            }
+
+            function displayPreview(data) {
+                const text = `EMPRESA DE BUSES
+RUT: 12345678-9
+Boleta Electronica
+
+Boleto: ${data.boleto}
+Reserva: ${data.reserva}
+ID: ${data.id}
+RUT: ${data.rut}
+Id Bus: ${data.idBus}
+Destino: ${data.destino}
+Fecha: ${data.fechaViaje}
+Asiento: ${data.asiento}
+Estado: ${data.estado}
+Terminal: ${data.terminal}
+Total: $${data.totalTransaccion}
+Transaccion: ${data.codigoTransaccion}
+Autorizacion: ${data.codigoAutorizacion}
+Tarjeta: ${data.tipoTarjeta}
+-------------------------------------
+Codigo de Barras: ${data.boleto}
+
+[acá va el codigo de barras]
+
+¡Gracias por preferirnos!`;
+                $('#ticketContentPreview').text(text);
+            }
+
+            displayPreview(ticketData);
+
+            $('#printTicketBtn').on('click', function () {
+                try {
+                    const escPosBytes = generateEscPosCommands(ticketData);
+                    const base64EscPos = uint8ToBase64(escPosBytes);
+                    const rawbtUrl = `rawbt:base64,${base64EscPos}`;
+                    window.location.href = rawbtUrl;
+                } catch (error) {
+                    alert("Error: " + error.message);
+                    console.error(error);
+                }
+            });
         });
     </script>
 </body>
+
 </html>
