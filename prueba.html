@@ -92,12 +92,18 @@
                 let escPos = new Uint8Array(0);
                 const encoder = new TextEncoder();
 
-                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x40])); // ESC @
-                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x00])); // left
+                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x40])); // ESC @ (Reset printer)
+                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x01])); // Centered alignment (1)
 
-                escPos = appendBytes(escPos, new Uint8Array([0x0A, 0x0A, 0x0A, 0x0A])); // Avanzar 4 líneas
-                //header
+                // Texto doble altura y ancho (2x)
+                escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x21, 0x11])); // Size: 2x height & width
                 escPos = appendBytes(escPos, encoder.encode("EMPRESA DE BUSES\n"));
+
+                // Volver a tamaño normal y alineación izquierda
+                escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x21, 0x00])); // Size normal
+                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x00])); // Align left
+
+                // Datos normales
                 escPos = appendBytes(escPos, encoder.encode("RUT: 12345678-9\n"));
                 escPos = appendBytes(escPos, encoder.encode("Boleta Electronica\n\n"));
 
@@ -121,12 +127,12 @@
                     escPos = appendBytes(escPos, encoder.encode(line + "\n"));
                 });
 
-                escPos = appendBytes(escPos, encoder.encode("----------------------------------------\n"));
+                escPos = appendBytes(escPos, encoder.encode("-------------------------------------------\n"));
 
                 // Barcode (Code128)
                 if (data.boleto) {
                     escPos = appendBytes(escPos, encoder.encode("Codigo de Barras: " + data.boleto + "\n\n"));
-                    
+
                     // Configuración del código de barras
                     escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x68, 0x50])); // Altura del código de barras
                     escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x77, 0x02])); // Ancho del código de barras
