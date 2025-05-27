@@ -182,7 +182,7 @@
 
                 // Mensaje final
                 escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x01])); // ESC a 1 - Centrar
-                escPos = appendBytes(escPos, encoder.encode("¡Gracias por preferirnos!\n\n"));
+                escPos = appendBytes(escPos, encoder.encode("Gracias por preferirnos!\n\n"));
 
                 // Avance de papel y corte
                 escPos = appendBytes(escPos, new Uint8Array([0x0A, 0x0A, 0x0A, 0x0A])); // Avanzar 4 líneas
