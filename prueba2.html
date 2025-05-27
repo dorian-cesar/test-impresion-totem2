@@ -98,11 +98,13 @@
                 escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x00])); // ESC a 0 - Left alignment
 
                 // Encabezado con texto grande centrado
+                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x33, 0x18]));
                 escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x01])); // Centrar
                 escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x21, 0x11])); // Texto doble altura y ancho
                 escPos = appendBytes(escPos, encoder.encode("EMPRESA DE BUSES\n"));
                 escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x21, 0x00])); // Volver a tamaño normal
                 escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x00])); // Alinear a la izquierda
+                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x33, 0x1E]));
                 escPos = appendBytes(escPos, encoder.encode("\n")); // Espacio adicional
 
                 // Resto del encabezado
