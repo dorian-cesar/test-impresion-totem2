@@ -133,6 +133,7 @@
 
                 escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x01])); // Center
                 escPos = appendBytes(escPos, encoder.encode("¡Gracias por preferirnos!\n\n"));
+                escPos = appendBytes(escPos, new Uint8Array([0x0A, 0x0A, 0x0A, 0x0A])); // Avanzar 4 líneas
                 escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x56, 0x00])); // Cut paper
                 return escPos;
             }
