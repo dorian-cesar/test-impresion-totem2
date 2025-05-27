@@ -1,62 +1,82 @@
-<script>
-    function appendBytes(arr1, arr2) {
-        const merged = new Uint8Array(arr1.length + arr2.length);
-        merged.set(arr1);
-        merged.set(arr2, arr1.length);
-        return merged;
-    }
-
-    function generateTestHeader() {
-        let escPos = new Uint8Array(0);
-        const encoder = new TextEncoder();
-
-        // Reset printer
-        escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x40]));
-
-        // Align left
-        escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x00]));
-
-        const lines = [
-            "EMPRESA DE BUSES",
-            "RUT: 12345678-9",
-            "Boleta Electronica",
-            "",
-            "------ FIN HEADER ------"
-        ];
-
-        for (let i = 0; i < lines.length; i++) {
-            const encodedLine = encoder.encode(lines[i] + "\n");
-            escPos = appendBytes(escPos, encodedLine);
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Imprimir Encabezado RawBT</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 40px;
+            text-align: center;
         }
 
-        // Feed and cut
-        escPos = appendBytes(escPos, new Uint8Array([0x0A, 0x0A, 0x0A, 0x0A]));
-        escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x56, 0x00]));
-
-        return escPos;
-    }
-
-    function uint8ToBase64(uint8arr) {
-        let binary = "";
-        for (let i = 0; i < uint8arr.length; i++) {
-            binary += String.fromCharCode(uint8arr[i]);
+        button {
+            font-size: 18px;
+            padding: 15px 30px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
         }
-        return btoa(binary);
-    }
 
-    document.addEventListener("DOMContentLoaded", function () {
-        document.getElementById("printTicketBtn").addEventListener("click", function () {
-            try {
-                const escPosBytes = generateTestHeader();
-                const base64EscPos = uint8ToBase64(escPosBytes);
-                const rawbtUrl = `rawbt:base64,${base64EscPos}`;
-                window.location.href = rawbtUrl;
-            } catch (error) {
-                alert("Error: " + error.message);
-                console.error(error);
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h2>Impresión de Encabezado con RawBT</h2>
+    <button id="printBtn">Imprimir Encabezado</button>
+
+    <script>
+        function appendBytes(arr1, arr2) {
+            const merged = new Uint8Array(arr1.length + arr2.length);
+            merged.set(arr1);
+            merged.set(arr2, arr1.length);
+            return merged;
+        }
+
+        function generateHeader() {
+            let escPos = new Uint8Array(0);
+            const encoder = new TextEncoder();
+
+            escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x40])); // Reset printer
+            escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x00])); // Left align
+
+            const lines = [
+                "EMPRESA DE BUSES",
+                "RUT: 12345678-9",
+                "Boleta Electronica",
+                "",
+                "------ FIN HEADER ------"
+            ];
+
+            lines.forEach(line => {
+                escPos = appendBytes(escPos, encoder.encode(line + "\n"));
+            });
+
+            escPos = appendBytes(escPos, new Uint8Array([0x0A, 0x0A, 0x0A, 0x0A])); // Feed
+            escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x56, 0x00])); // Cut
+
+            return escPos;
+        }
+
+        function uint8ToBase64(uint8arr) {
+            let binary = "";
+            for (let i = 0; i < uint8arr.length; i++) {
+                binary += String.fromCharCode(uint8arr[i]);
             }
-        });
-    });
-</script>
+            return btoa(binary);
+        }
 
-<button id="printTicketBtn">Imprimir Header</button>
+        document.getElementById("printBtn").addEventListener("click", () => {
+            const escPos = generateHeader();
+            const base64Data = uint8ToBase64(escPos);
+            const rawbtUrl = `rawbt:base64,${base64Data}`;
+            window.location.href = rawbtUrl;
+        });
+    </script>
+</body>
+</html>
