@@ -50,7 +50,7 @@
                 <i class="bi bi-printer"></i> Imprimir Boleto
             </button>
         </div>
-        <p>v - 3</p>
+        <p>v - 4</p>
         <hr>
 
         <h5 class="mt-4 text-center">Previsualización del Contenido (Texto Plano)</h5>
@@ -101,6 +101,7 @@
                 escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x40]));
 
                 // 2. Añadir un DELAY suficiente (más saltos de línea y bytes nulos)
+                escPos = appendBytes(escPos, new Uint8Array([0x00, 0x00, 0x00, 0x00, 0x00])); // 5 bytes nulos
                 escPos = appendBytes(escPos, new Uint8Array([0x00, 0x00, 0x00, 0x00, 0x00])); // 5 bytes nulos
                 escPos = appendBytes(escPos, new Uint8Array([0x0A, 0x0A, 0x0A, 0x0A, 0x0A])); // 10 saltos
                 escPos = appendBytes(escPos, new Uint8Array([0x0A, 0x0A, 0x0A, 0x0A, 0x0A]));
