@@ -28,7 +28,6 @@
             margin-top: 20px;
             font-family: 'Courier New', Courier, monospace;
             white-space: pre-wrap;
-            /* Para mostrar los saltos de línea */
             font-size: 0.9em;
             color: #343a40;
         }
@@ -58,7 +57,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1bK7sW+V9iQ5SULX90oM5YDFY9jV6n2E7N"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
         crossorigin="anonymous"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 
@@ -102,16 +101,15 @@
                 escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x01])); // Centrar
                 escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x21, 0x11])); // Texto doble altura y ancho
                 escPos = appendBytes(escPos, encoder.encode("EMPRESA DE BUSES\n"));
+                escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x21, 0x00])); // Volver a tamaño normal
+                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x00])); // Alinear a la izquierda
+                escPos = appendBytes(escPos, encoder.encode("\n")); // Espacio adicional
 
-                // Volver a tamaño normal y alineación izquierda
-                escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x21, 0x00])); // Size normal
-                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x00])); // Align left
-
-                // Datos normales
-                escPos = appendBytes(escPos, encoder.encode("\n"));
+                // Resto del encabezado
                 escPos = appendBytes(escPos, encoder.encode("RUT: 12345678-9\n"));
                 escPos = appendBytes(escPos, encoder.encode("Boleta Electronica\n\n"));
 
+                // Datos del boleto
                 const lines = [
                     `Boleto: ${data.boleto}`,
                     `Reserva: ${data.reserva}`,
@@ -128,33 +126,35 @@
                     `Autorizacion: ${data.codigoAutorizacion}`,
                     `Tarjeta: ${data.tipoTarjeta}`,
                 ];
+                
                 lines.forEach(line => {
                     escPos = appendBytes(escPos, encoder.encode(line + "\n"));
                 });
 
-                escPos = appendBytes(escPos, encoder.encode("-------------------------------------------\n"));
+                // Línea divisoria
+                escPos = appendBytes(escPos, encoder.encode("-------------------------------------\n\n"));
 
-                // Barcode (Code128)
-                if (data.boleto) {
-                    escPos = appendBytes(escPos, encoder.encode("Codigo de Barras: " + data.boleto + "\n\n"));
+                // Texto del código de barras
+                escPos = appendBytes(escPos, encoder.encode("Codigo de Barras: " + data.boleto + "\n\n"));
 
-                    // Configuración del código de barras
-                    escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x68, 0x50])); // Altura del código de barras
-                    escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x77, 0x02])); // Ancho del código de barras
-                    escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x48, 0x02])); // Mostrar texto debajo del código
-                    escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x6B, 0x49, data.boleto.length + 2])); // Code128
-                    escPos = appendBytes(escPos, new Uint8Array([0x7B, 0x42])); // Inicio del código B
-                    escPos = appendBytes(escPos, encoder.encode(data.boleto));
-                    escPos = appendBytes(escPos, new Uint8Array([0x00])); // Terminador
-                    escPos = appendBytes(escPos, encoder.encode("\n\n"));
-                }
+                // Configuración del código de barras (Code128)
+                escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x68, 0x50])); // Altura
+                escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x77, 0x02])); // Ancho
+                escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x48, 0x02])); // Mostrar texto debajo
+                escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x6B, 0x49, data.boleto.length + 2])); // Code128
+                escPos = appendBytes(escPos, new Uint8Array([0x7B, 0x42])); // Inicio Code B
+                escPos = appendBytes(escPos, encoder.encode(data.boleto)); // Datos
+                escPos = appendBytes(escPos, new Uint8Array([0x00])); // Terminador
+                escPos = appendBytes(escPos, encoder.encode("\n\n"));
 
-                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x00])); //left
+                // Mensaje final centrado
+                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x01])); // Centrar
                 escPos = appendBytes(escPos, encoder.encode("¡Gracias por preferirnos!\n\n"));
 
-                //siguiente boleta
-                escPos = appendBytes(escPos, new Uint8Array([0x0A, 0x0A, 0x0A, 0x0A])); // Avanzar 4 líneas
-                escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x56, 0x00])); // Cut paper
+                // Avanzar papel y cortar
+                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x64, 0x04])); // Avanzar 4 líneas
+                escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x56, 0x00])); // Cortar papel
+                
                 return escPos;
             }
 
@@ -167,30 +167,30 @@
             }
 
             function displayPreview(data) {
-                const text = `
-                    EMPRESA DE BUSES
-                    RUT: 12345678-9
-                    Boleta Electronica
+                const text = `       EMPRESA DE BUSES
 
-                    Boleto: ${data.boleto}
-                    Reserva: ${data.reserva}
-                    ID: ${data.id}
-                    RUT: ${data.rut}
-                    Id Bus: ${data.idBus}
-                    Destino: ${data.destino}
-                    Fecha: ${data.fechaViaje}
-                    Asiento: ${data.asiento}
-                    Estado: ${data.estado}
-                    Terminal: ${data.terminal}
-                    Total: $${data.totalTransaccion}
-                    Transaccion: ${data.codigoTransaccion}
-                    Autorizacion: ${data.codigoAutorizacion}
-                    Tarjeta: ${data.tipoTarjeta}
-                    -------------------------------------
-                    Codigo de Barras: ${data.boleto}
+RUT: 12345678-9
+Boleta Electronica
 
-                    ¡Gracias por preferirnos!
-                    `;
+Boleto: ${data.boleto}
+Reserva: ${data.reserva}
+ID: ${data.id}
+RUT: ${data.rut}
+Id Bus: ${data.idBus}
+Destino: ${data.destino}
+Fecha: ${data.fechaViaje}
+Asiento: ${data.asiento}
+Estado: ${data.estado}
+Terminal: ${data.terminal}
+Total: $${data.totalTransaccion}
+Transaccion: ${data.codigoTransaccion}
+Autorizacion: ${data.codigoAutorizacion}
+Tarjeta: ${data.tipoTarjeta}
+-------------------------------------
+
+[acá va el codigo de barras]
+
+¡Gracias por preferirnos!`;
                 $('#ticketContentPreview').text(text);
             }
 
