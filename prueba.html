@@ -96,6 +96,9 @@
                 // Inicializar impresora
                 escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x40])); // ESC @ - Reset printer
 
+                // **NUEVO: Añadir un salto de línea para dar tiempo a la impresora**
+                escPos = appendBytes(escPos, encoder.encode("\n")); // O incluso un par de ellos: escPos = appendBytes(escPos, encoder.encode("\n\n"));
+
                 // Configurar alineación izquierda
                 escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x00])); // ESC a 0 - Left alignment
 
@@ -103,7 +106,7 @@
                     "EMPRESA DE BUSES",
                     "RUT: 12345678-9",
                     "Boleta Electronica",
-                    "",
+                    "", // Esta línea vacía también ayuda a separar el encabezado
                     `Boleto: ${data.boleto}`,
                     `Reserva: ${data.reserva}`,
                     `ID: ${data.id}`,
