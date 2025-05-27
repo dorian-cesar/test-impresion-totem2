@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Imprimir Boleto RawBT</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+        xintegrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <style>
         body {
             padding: 20px;
@@ -28,8 +28,10 @@
             margin-top: 20px;
             font-family: 'Courier New', Courier, monospace;
             white-space: pre-wrap;
+            /* Para mostrar los saltos de línea */
             font-size: 0.9em;
             color: #343a40;
+            text-align: left;
         }
 
         h2 {
@@ -48,7 +50,7 @@
                 <i class="bi bi-printer"></i> Imprimir Boleto
             </button>
         </div>
-
+        <p>v - 1</p>
         <hr>
 
         <h5 class="mt-4 text-center">Previsualización del Contenido (Texto Plano)</h5>
@@ -57,13 +59,16 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+        xintegrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1bK7sW+V9iQ5SULX90oM5YDFY9jV6n2E7N"
         crossorigin="anonymous"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 
     <script>
         $(document).ready(function () {
             const ticketData = {
+                empresa: "EMPRESA DE BUSES",
+                rutEmpresa: "RUT: 12345678-9",
+                boleta: "Boleta Electronica",
                 boleto: "KP10332",
                 reserva: "TS250527105448709VIFX",
                 id: "7597",
@@ -91,23 +96,39 @@
                 let escPos = new Uint8Array(0);
                 const encoder = new TextEncoder();
 
-                // 1. INICIALIZACIÓN BÁSICA
-            escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x40])); // Reset printer
-            
-            // 2. CONFIGURACIÓN PARA HEADER FIABLE
-            escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x4D, 0x01])); // Modo de alta calidad
-            escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x33, 0x18])); // Velocidad reducida
-            
-            // 3. HEADER (texto normal, alineado izquierda)
-            escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x00])); // Alineación izquierda
-            escPos = appendBytes(escPos, encoder.encode("EMPRESA DE BUSES\n"));
-            escPos = appendBytes(escPos, encoder.encode("RUT: 12345678-9\n"));
-            escPos = appendBytes(escPos, encoder.encode("Boleta Electronica\n\n"));
-            
-            // 4. RESTAURAR CONFIGURACIÓN NORMAL
-            escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x4D, 0x00])); // Modo normal
-            escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x33, 0x1E])); // Velocidad normal
-                // Datos del boleto
+                // 1. SECUENCIA DE INICIALIZACIÓN ROBUSTA
+                // Enviar múltiples RESETs con delays entre ellos
+                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x40])); // ESC @
+                escPos = appendBytes(escPos, new Uint8Array([0x00, 0x00, 0x00])); // 3 bytes nulos de delay
+                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x40])); // Segundo reset
+                escPos = appendBytes(escPos, new Uint8Array([0x00, 0x00, 0x00])); // Delay
+
+                // 2. CONFIGURACIÓN INICIAL CRÍTICA
+                // a) Configurar página de códigos (probar diferentes valores)
+                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x74, 0x02])); // CP850 (Europa Occidental)
+
+                // b) Resetear todos los formatos
+                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x21, 0x00])); // Reset texto
+                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x45, 0x00])); // Negrita OFF
+                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x56, 0x00])); // Rotación OFF
+
+                // 3. DELAY EXTENSIVO ANTES DE EMPEZAR
+                escPos = appendBytes(escPos, new Uint8Array([0x00, 0x00, 0x00, 0x00, 0x00])); // 5 bytes nulos
+                escPos = appendBytes(escPos, new Uint8Array([0x0A, 0x0A, 0x0A, 0x0A, 0x0A])); // 5 saltos de línea
+
+                // 4. ENVIAR TEXTO CON ESTRATEGIA SEGURA
+                // a) Primero enviar caracteres invisibles para "calentar" la impresora
+                escPos = appendBytes(escPos, encoder.encode("\n\n")); // 2 saltos
+
+                // b) Enviar el header con formato explícito y reseteos
+                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x21, 0x08])); // Texto grande
+                escPos = appendBytes(escPos, encoder.encode(data.empresa + "\n"));
+                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x21, 0x00])); // Reset tamaño
+
+                escPos = appendBytes(escPos, encoder.encode(data.rutEmpresa + "\n"));
+                escPos = appendBytes(escPos, encoder.encode(data.boleta + "\n\n"));
+
+                // 5. RESTO DEL CONTENIDO CON DELAYS ENTRE LÍNEAS
                 const lines = [
                     `Boleto: ${data.boleto}`,
                     `Reserva: ${data.reserva}`,
@@ -124,35 +145,47 @@
                     `Autorizacion: ${data.codigoAutorizacion}`,
                     `Tarjeta: ${data.tipoTarjeta}`,
                 ];
-                
+
                 lines.forEach(line => {
                     escPos = appendBytes(escPos, encoder.encode(line + "\n"));
+                    escPos = appendBytes(escPos, new Uint8Array([0x00])); // Byte nulo después de cada línea
                 });
 
-                // Línea divisoria
-                escPos = appendBytes(escPos, encoder.encode("-------------------------------------\n\n"));
+                // 6. CÓDIGO DE BARRAS (sin cambios)
+                escPos = appendBytes(escPos, encoder.encode("-------------------------------------------\n"));
 
-                // Texto del código de barras
-                escPos = appendBytes(escPos, encoder.encode("Codigo de Barras: " + data.boleto + "\n\n"));
+                // Barcode (Code128)
+                if (data.boleto) {
+                    escPos = appendBytes(escPos, encoder.encode("Codigo de Barras: " + data.boleto + "\n\n"));
 
-                // Configuración del código de barras (Code128)
-                escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x68, 0x50])); // Altura
-                escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x77, 0x02])); // Ancho
-                escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x48, 0x02])); // Mostrar texto debajo
-                escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x6B, 0x49, data.boleto.length + 2])); // Code128
-                escPos = appendBytes(escPos, new Uint8Array([0x7B, 0x42])); // Inicio Code B
-                escPos = appendBytes(escPos, encoder.encode(data.boleto)); // Datos
-                escPos = appendBytes(escPos, new Uint8Array([0x00])); // Terminador
-                escPos = appendBytes(escPos, encoder.encode("\n\n"));
+                    // Configuración del código de barras
+                    escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x68, 0x50])); // GS h n - Altura del código de barras (80 puntos)
+                    escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x77, 0x02])); // GS w n - Ancho del módulo (2 puntos)
+                    escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x48, 0x02])); // GS H n - Mostrar texto debajo del código (0x02 = abajo)
 
-                // Mensaje final centrado
+                    // Comando Code128: GS k m d1...dk NUL
+                    // m = 0x49 (73 decimal) para Code128
+                    // N = longitud de los datos a codificar
+                    // Los datos para Code128 a menudo requieren un prefijo para indicar el Code Set (ej. {B para set B)
+                    const barcodeContent = `{B${data.boleto}`; // Prefijo {B para Code Set B
+
+                    // La longitud debe incluir el prefijo {B
+                    escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x6B, 0x49, barcodeContent.length]));
+                    escPos = appendBytes(escPos, encoder.encode(barcodeContent));
+                    // El terminador 0x00 es a menudo necesario para Code128
+                    escPos = appendBytes(escPos, new Uint8Array([0x00]));
+
+                    escPos = appendBytes(escPos, encoder.encode("\n\n")); // Saltos de línea después del código de barras
+                }
+
+
+                // 7. FINALIZACIÓN
                 escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x01])); // Centrar
                 escPos = appendBytes(escPos, encoder.encode("¡Gracias por preferirnos!\n\n"));
 
-                // Avanzar papel y cortar
-                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x64, 0x04])); // Avanzar 4 líneas
-                escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x56, 0x00])); // Cortar papel
-                
+                // Corte de papel
+                escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x56, 0x00])); // GS V 0
+
                 return escPos;
             }
 
@@ -165,8 +198,7 @@
             }
 
             function displayPreview(data) {
-                const text = `       EMPRESA DE BUSES
-
+                const text = `EMPRESA DE BUSES
 RUT: 12345678-9
 Boleta Electronica
 
@@ -185,6 +217,7 @@ Transaccion: ${data.codigoTransaccion}
 Autorizacion: ${data.codigoAutorizacion}
 Tarjeta: ${data.tipoTarjeta}
 -------------------------------------
+Codigo de Barras: ${data.boleto}
 
 [acá va el codigo de barras]
 
