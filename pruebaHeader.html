@@ -104,20 +104,20 @@
                     "RUT: 12345678-9",
                     "Boleta Electronica",
                     "",
-                    `Boleto: ${data.boleto}`,
-                    `Reserva: ${data.reserva}`,
-                    `ID: ${data.id}`,
-                    `RUT: ${data.rut}`,
-                    `Id Bus: ${data.idBus}`,
-                    `Destino: ${data.destino}`,
-                    `Fecha: ${data.fechaViaje}`,
-                    `Asiento: ${data.asiento}`,
-                    `Estado: ${data.estado}`,
-                    `Terminal: ${data.terminal}`,
-                    `Total: $${data.totalTransaccion}`,
-                    `Transaccion: ${data.codigoTransaccion}`,
-                    `Autorizacion: ${data.codigoAutorizacion}`,
-                    `Tarjeta: ${data.tipoTarjeta}`,
+                    `Boleto: -`,
+                    `Reserva: -`,
+                    `ID: -`,
+                    `RUT: -`,
+                    `Id Bus: -`,
+                    `Destino: -`,
+                    `Fecha: -`,
+                    `Asiento: -`,
+                    `Estado: -`,
+                    `Terminal: -`,
+                    `Total: -`,
+                    `Transaccion: -`,
+                    `Autorizacion: -`,
+                    `Tarjeta: -`,
                 ];
                 lines.forEach(line => {
                     escPos = appendBytes(escPos, encoder.encode(line + "\n"));
@@ -127,7 +127,7 @@
 
                 // Barcode (Code128)
                 if (data.boleto) {
-                    escPos = appendBytes(escPos, encoder.encode("Codigo de Barras: " + data.boleto + "\n\n"));
+                    escPos = appendBytes(escPos, encoder.encode("Codigo de Barras: - " +  "\n\n"));
 
                     // Configuración del código de barras
                     escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x68, 0x50])); // Altura del código de barras
