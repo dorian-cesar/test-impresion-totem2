@@ -102,7 +102,8 @@
 
                 // 2. Añadir un DELAY suficiente (más saltos de línea y bytes nulos)
                 escPos = appendBytes(escPos, new Uint8Array([0x00, 0x00, 0x00, 0x00, 0x00])); // 5 bytes nulos
-                escPos = appendBytes(escPos, new Uint8Array([0x0A, 0x0A, 0x0A, 0x0A, 0x0A, 0x0A, 0x0A, 0x0A])); // 8 saltos
+                escPos = appendBytes(escPos, new Uint8Array([0x0A, 0x0A, 0x0A, 0x0A, 0x0A])); // 10 saltos
+                escPos = appendBytes(escPos, new Uint8Array([0x0A, 0x0A, 0x0A, 0x0A, 0x0A]));
 
                 // 3. Configurar página de códigos (CP858 para caracteres latinos)
                 escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x74, 0x10])); // ESC t 0x13
