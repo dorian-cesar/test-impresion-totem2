@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Imprimir Encabezado RawBT</title>
+    <title>Impresión de Prueba RawBT</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body {
@@ -18,70 +18,95 @@
             border: none;
             border-radius: 8px;
             cursor: pointer;
+            margin: 10px;
         }
-        button:hover {
-            background-color: #0056b3;
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
         }
     </style>
 </head>
 <body>
-    <h2>Impresión de Encabezado con RawBT</h2>
-    <button id="printBtn">Imprimir Encabezado</button>
+    <h2>Prueba de Impresión RawBT</h2>
+    <button id="printBtn">Imprimir Ticket de Prueba</button>
+    <div id="statusMsg" class="status"></div>
 
     <script>
-        function appendBytes(arr1, arr2) {
-            const merged = new Uint8Array(arr1.length + arr2.length);
-            merged.set(arr1);
-            merged.set(arr2, arr1.length);
-            return merged;
+        // Función para mostrar estado
+        function showStatus(message, isError = false) {
+            const statusDiv = document.getElementById('statusMsg');
+            statusDiv.textContent = message;
+            statusDiv.className = isError ? 'status error' : 'status success';
         }
 
-        function generateHeader() {
-            let escPos = new Uint8Array(0);
+        // Función para generar comandos ESC/POS
+        function generateTestTicket() {
+            const commands = [];
             const encoder = new TextEncoder();
             
-            // 1. INICIALIZACIÓN ROBUSTA
-            escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x40])); // Reset printer
-            escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x4D, 0x01])); // Modo de alta calidad
-            escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x33, 0x18])); // Velocidad reducida
+            // 1. Comandos de inicialización CRÍTICOS
+            commands.push(new Uint8Array([0x1B, 0x40])); // Inicializar impresora
+            commands.push(new Uint8Array([0x1B, 0x4D, 0x01])); // Modo de alta calidad
+            commands.push(new Uint8Array([0x1B, 0x33, 0x18])); // Velocidad reducida
             
-            // 2. ENCABEZADO CON DELAYS
-            escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x01])); // Centrado temporal
-            escPos = appendBytes(escPos, encoder.encode("EMPRESA DE BUSES\n\n"));
+            // 2. Encabezado con formato simple
+            commands.push(encoder.encode("EMPRESA DE BUSES\n"));
+            commands.push(encoder.encode("RUT: 12345678-9\n"));
+            commands.push(encoder.encode("----------------\n\n"));
             
-            // 3. RESTAURAR ALINEACIÓN IZQUIERDA
-            escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x00])); // Alineación izquierda
-            escPos = appendBytes(escPos, encoder.encode("RUT: 12345678-9\n"));
-            escPos = appendBytes(escPos, encoder.encode("Boleta Electronica\n\n"));
+            // 3. Restaurar configuración normal
+            commands.push(new Uint8Array([0x1B, 0x4D, 0x00])); // Modo normal
+            commands.push(new Uint8Array([0x1B, 0x33, 0x1E])); // Velocidad normal
             
-            // 4. RESTAURAR VELOCIDAD NORMAL
-            escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x4D, 0x00])); // Modo normal
-            escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x33, 0x1E])); // Velocidad normal
+            // 4. Finalización
+            commands.push(new Uint8Array([0x1D, 0x56, 0x00])); // Corte de papel
             
-            // 5. FINALIZACIÓN
-            escPos = appendBytes(escPos, new Uint8Array([0x0A, 0x0A])); // 2 líneas en blanco
-            escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x56, 0x00])); // Corte
-
-            return escPos;
+            // Combinar todos los comandos
+            let combined = new Uint8Array(0);
+            commands.forEach(cmd => {
+                const temp = new Uint8Array(combined.length + cmd.length);
+                temp.set(combined);
+                temp.set(cmd, combined.length);
+                combined = temp;
+            });
+            
+            return combined;
         }
 
-        function uint8ToBase64(uint8arr) {
-            let binary = "";
-            for (let i = 0; i < uint8arr.length; i++) {
-                binary += String.fromCharCode(uint8arr[i]);
-            }
-            return btoa(binary);
-        }
-
+        // Función para imprimir
         document.getElementById("printBtn").addEventListener("click", () => {
             try {
-                const escPos = generateHeader();
-                const base64Data = uint8ToBase64(escPos);
+                showStatus("Preparando datos para imprimir...");
+                
+                const escPosData = generateTestTicket();
+                const binaryString = Array.from(escPosData).map(byte => {
+                    return String.fromCharCode(byte);
+                }).join('');
+                
+                const base64Data = btoa(binaryString);
                 const rawbtUrl = `rawbt:base64,${base64Data}`;
+                
+                showStatus("Enviando a la impresora...");
+                
+                // Abrir RawBT con timeout
                 window.location.href = rawbtUrl;
+                
+                setTimeout(() => {
+                    showStatus("Impresión enviada correctamente");
+                }, 1000);
+                
             } catch (error) {
-                alert("Error al imprimir: " + error.message);
-                console.error(error);
+                showStatus(`Error: ${error.message}`, true);
+                console.error("Error de impresión:", error);
             }
         });
     </script>
