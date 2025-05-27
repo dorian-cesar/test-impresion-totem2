@@ -95,6 +95,7 @@
                 escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x40])); // ESC @
                 escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x00])); // left
 
+                escPos = appendBytes(escPos, new Uint8Array([0x0A, 0x0A, 0x0A, 0x0A])); // Avanzar 4 líneas
                 //header
                 escPos = appendBytes(escPos, encoder.encode("EMPRESA DE BUSES\n"));
                 escPos = appendBytes(escPos, encoder.encode("RUT: 12345678-9\n"));
