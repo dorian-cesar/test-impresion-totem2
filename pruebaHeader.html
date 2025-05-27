@@ -94,32 +94,34 @@
 
             function generateEscPosCommands(data) {
                 let escPos = new Uint8Array(0);
-                const encoder = new TextEncoder(); // Por defecto, TextEncoder usa UTF-8
+                const encoder = new TextEncoder();
 
-                // 1. Inicializar impresora (ESC @)
-                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x40])); 
+                // 1. Inicializar impresora (ESC @) - CRÍTICO
+                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x40]));
 
-                // 2. **CRÍTICO:** Añadir múltiples saltos de línea o bytes nulos como "padding"
-                // Esto da a la impresora tiempo para procesar el reset y estabilizar su buffer.
-                // Prueba con 2, 3 o 4 saltos de línea. También puedes probar con bytes nulos (0x00).
-                escPos = appendBytes(escPos, new Uint8Array([0x0A, 0x0A, 0x0A, 0x0A, 0x0A, 0x0A, 0x0A, 0x0A])); // Avanzar 4 líneas
-                escPos = appendBytes(escPos, encoder.encode("\n\n\n")); // Tres saltos de línea
+                // 2. Añadir un DELAY suficiente (más saltos de línea y bytes nulos)
+                escPos = appendBytes(escPos, new Uint8Array([0x00, 0x00, 0x00, 0x00])); // 4 bytes nulos
+                escPos = appendBytes(escPos, new Uint8Array([0x0A, 0x0A, 0x0A, 0x0A, 0x0A, 0x0A])); // 6 saltos
 
-                // 3. Configurar la página de códigos de caracteres (Code Page)
-                // Esto es FUNDAMENTAL para que los caracteres se impriman correctamente
-                // y no se "corten" o se muestren mal.
-                // 0x13 es para CP858 (Europa Occidental, soporta 'ñ', tildes, etc.)
-                // Si esto no funciona, prueba con 0x06 (CP437, más básico).
-                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x74, 0x13])); // ESC t n
+                // 3. Configurar página de códigos (CP858 para caracteres latinos)
+                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x74, 0x13])); // ESC t 0x13
 
-                // 4. Configurar alineación izquierda (aplica a todo el texto por defecto)
-                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x00])); // ESC a 0
+                // 4. Configurar alineación izquierda
+                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x00]));
 
-                // 5. Definir todas las líneas de texto a imprimir
+                // 5. Configurar tamaño de texto normal (asegurarse que no hay formato residual)
+                escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x21, 0x00])); // GS ! 0 (tamaño normal)
+
+                // 6. Imprimir header con formato reforzado
+                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x45, 0x01])); // ESC E 1 (negrita ON)
+                escPos = appendBytes(escPos, encoder.encode(data.empresa + "\n"));
+                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x45, 0x00])); // ESC E 0 (negrita OFF)
+
+                escPos = appendBytes(escPos, encoder.encode(data.rutEmpresa + "\n"));
+                escPos = appendBytes(escPos, encoder.encode(data.boleta + "\n\n"));
+
+
                 const lines = [
-                    `${data.empresa}`,
-                    `${data.rutEmpresa}`,
-                    `${data.boleta}`,
                     `Boleto: ${data.boleto}`,
                     `Reserva: ${data.reserva}`,
                     `ID: ${data.id}`,
@@ -135,7 +137,7 @@
                     `Autorizacion: ${data.codigoAutorizacion}`,
                     `Tarjeta: ${data.tipoTarjeta}`,
                 ];
-                
+
                 // 6. Añadir cada línea a los comandos ESC/POS
                 lines.forEach(line => {
                     escPos = appendBytes(escPos, encoder.encode(line + "\n"));
@@ -152,19 +154,19 @@
                     escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x68, 0x50])); // GS h n - Altura del código de barras (80 puntos)
                     escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x77, 0x02])); // GS w n - Ancho del módulo (2 puntos)
                     escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x48, 0x02])); // GS H n - Mostrar texto debajo del código (0x02 = abajo)
-                    
+
                     // Comando Code128: GS k m d1...dk NUL
                     // m = 0x49 (73 decimal) para Code128
                     // N = longitud de los datos a codificar
                     // Los datos para Code128 a menudo requieren un prefijo para indicar el Code Set (ej. {B para set B)
                     const barcodeContent = `{B${data.boleto}`; // Prefijo {B para Code Set B
-                    
+
                     // La longitud debe incluir el prefijo {B
-                    escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x6B, 0x49, barcodeContent.length])); 
+                    escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x6B, 0x49, barcodeContent.length]));
                     escPos = appendBytes(escPos, encoder.encode(barcodeContent));
                     // El terminador 0x00 es a menudo necesario para Code128
-                    escPos = appendBytes(escPos, new Uint8Array([0x00])); 
-                    
+                    escPos = appendBytes(escPos, new Uint8Array([0x00]));
+
                     escPos = appendBytes(escPos, encoder.encode("\n\n")); // Saltos de línea después del código de barras
                 }
 
@@ -175,7 +177,7 @@
                 // Avance de papel y corte
                 escPos = appendBytes(escPos, new Uint8Array([0x0A, 0x0A, 0x0A, 0x0A])); // Avanzar 4 líneas
                 escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x56, 0x00])); // GS V 0 - Cortar papel
-                
+
                 return escPos;
             }
 
