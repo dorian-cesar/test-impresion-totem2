@@ -91,26 +91,22 @@
                 let escPos = new Uint8Array(0);
                 const encoder = new TextEncoder();
 
-                // Inicializar impresora
-                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x40])); // ESC @ - Reset printer
-                
-                // Configurar alineación izquierda
-                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x00])); // ESC a 0 - Left alignment
-
-                // Encabezado con texto grande centrado
-                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x33, 0x18]));
-                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x01])); // Centrar
-                escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x21, 0x11])); // Texto doble altura y ancho
-                escPos = appendBytes(escPos, encoder.encode("EMPRESA DE BUSES\n"));
-                escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x21, 0x00])); // Volver a tamaño normal
-                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x00])); // Alinear a la izquierda
-                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x33, 0x1E]));
-                escPos = appendBytes(escPos, encoder.encode("\n")); // Espacio adicional
-
-                // Resto del encabezado
-                escPos = appendBytes(escPos, encoder.encode("RUT: 12345678-9\n"));
-                escPos = appendBytes(escPos, encoder.encode("Boleta Electronica\n\n"));
-
+                // 1. INICIALIZACIÓN BÁSICA
+            escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x40])); // Reset printer
+            
+            // 2. CONFIGURACIÓN PARA HEADER FIABLE
+            escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x4D, 0x01])); // Modo de alta calidad
+            escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x33, 0x18])); // Velocidad reducida
+            
+            // 3. HEADER (texto normal, alineado izquierda)
+            escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x00])); // Alineación izquierda
+            escPos = appendBytes(escPos, encoder.encode("EMPRESA DE BUSES\n"));
+            escPos = appendBytes(escPos, encoder.encode("RUT: 12345678-9\n"));
+            escPos = appendBytes(escPos, encoder.encode("Boleta Electronica\n\n"));
+            
+            // 4. RESTAURAR CONFIGURACIÓN NORMAL
+            escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x4D, 0x00])); // Modo normal
+            escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x33, 0x1E])); // Velocidad normal
                 // Datos del boleto
                 const lines = [
                     `Boleto: ${data.boleto}`,
