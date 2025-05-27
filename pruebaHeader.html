@@ -10,7 +10,6 @@
             padding: 40px;
             text-align: center;
         }
-
         button {
             font-size: 18px;
             padding: 15px 30px;
@@ -20,7 +19,6 @@
             border-radius: 8px;
             cursor: pointer;
         }
-
         button:hover {
             background-color: #0056b3;
         }
@@ -41,24 +39,28 @@
         function generateHeader() {
             let escPos = new Uint8Array(0);
             const encoder = new TextEncoder();
-
+            
+            // 1. INICIALIZACIÓN ROBUSTA
             escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x40])); // Reset printer
-            escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x00])); // Left align
-
-            const lines = [
-                "EMPRESA DE BUSES",
-                "RUT: 12345678-9",
-                "Boleta Electronica",
-                "",
-                "------ FIN HEADER ------"
-            ];
-
-            lines.forEach(line => {
-                escPos = appendBytes(escPos, encoder.encode(line + "\n"));
-            });
-
-            escPos = appendBytes(escPos, new Uint8Array([0x0A, 0x0A, 0x0A, 0x0A])); // Feed
-            escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x56, 0x00])); // Cut
+            escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x4D, 0x01])); // Modo de alta calidad
+            escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x33, 0x18])); // Velocidad reducida
+            
+            // 2. ENCABEZADO CON DELAYS
+            escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x01])); // Centrado temporal
+            escPos = appendBytes(escPos, encoder.encode("EMPRESA DE BUSES\n\n"));
+            
+            // 3. RESTAURAR ALINEACIÓN IZQUIERDA
+            escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x00])); // Alineación izquierda
+            escPos = appendBytes(escPos, encoder.encode("RUT: 12345678-9\n"));
+            escPos = appendBytes(escPos, encoder.encode("Boleta Electronica\n\n"));
+            
+            // 4. RESTAURAR VELOCIDAD NORMAL
+            escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x4D, 0x00])); // Modo normal
+            escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x33, 0x1E])); // Velocidad normal
+            
+            // 5. FINALIZACIÓN
+            escPos = appendBytes(escPos, new Uint8Array([0x0A, 0x0A])); // 2 líneas en blanco
+            escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x56, 0x00])); // Corte
 
             return escPos;
         }
@@ -72,10 +74,15 @@
         }
 
         document.getElementById("printBtn").addEventListener("click", () => {
-            const escPos = generateHeader();
-            const base64Data = uint8ToBase64(escPos);
-            const rawbtUrl = `rawbt:base64,${base64Data}`;
-            window.location.href = rawbtUrl;
+            try {
+                const escPos = generateHeader();
+                const base64Data = uint8ToBase64(escPos);
+                const rawbtUrl = `rawbt:base64,${base64Data}`;
+                window.location.href = rawbtUrl;
+            } catch (error) {
+                alert("Error al imprimir: " + error.message);
+                console.error(error);
+            }
         });
     </script>
 </body>
