@@ -66,6 +66,9 @@
     <script>
         $(document).ready(function () {
             const ticketData = {
+                empresa: "EMPRESA DE BUSES",
+                rutEmpresa: "12345678-9",
+                boleta: "Boleta Electronica",
                 boleto: "KP10332",
                 reserva: "TS250527105448709VIFX",
                 id: "7597",
@@ -103,10 +106,9 @@
                 escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x00])); // ESC a 0 - Left alignment
 
                 const lines = [
-                    "EMPRESA DE BUSES",
-                    "RUT: 12345678-9",
-                    "Boleta Electronica",
-                    "", // Esta línea vacía también ayuda a separar el encabezado
+                    `${data.empresa}`,
+                    `${data.rutEmpresa}`,
+                    `${data.boleta}`,
                     `Boleto: ${data.boleto}`,
                     `Reserva: ${data.reserva}`,
                     `ID: ${data.id}`,
