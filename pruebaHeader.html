@@ -50,7 +50,7 @@
                 <i class="bi bi-printer"></i> Imprimir Boleto
             </button>
         </div>
-        <p>v - 2</p>
+        <p>v - 3</p>
         <hr>
 
         <h5 class="mt-4 text-center">Previsualización del Contenido (Texto Plano)</h5>
@@ -98,24 +98,28 @@
 
                 // 1. Inicializar impresora (ESC @) - CRÍTICO
                 escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x40]));
+                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x40]));
 
                 // 2. Añadir un DELAY suficiente (más saltos de línea y bytes nulos)
-                escPos = appendBytes(escPos, new Uint8Array([0x00, 0x00, 0x00, 0x00])); // 4 bytes nulos
-                escPos = appendBytes(escPos, new Uint8Array([0x0A, 0x0A, 0x0A, 0x0A, 0x0A, 0x0A])); // 6 saltos
+                escPos = appendBytes(escPos, new Uint8Array([0x00, 0x00, 0x00, 0x00, 0x00])); // 5 bytes nulos
+                escPos = appendBytes(escPos, new Uint8Array([0x0A, 0x0A, 0x0A, 0x0A, 0x0A, 0x0A, 0x0A, 0x0A])); // 8 saltos
 
                 // 3. Configurar página de códigos (CP858 para caracteres latinos)
-                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x74, 0x13])); // ESC t 0x13
+                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x74, 0x10])); // ESC t 0x13
 
                 // 4. Configurar alineación izquierda
                 escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x00]));
 
                 // 5. Configurar tamaño de texto normal (asegurarse que no hay formato residual)
-                escPos = appendBytes(escPos, new Uint8Array([0x1D, 0x21, 0x00])); // GS ! 0 (tamaño normal)
+                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x21, 0x00])); // Reset texto
+                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x45, 0x00])); // Negrita OFF
+                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x56, 0x00])); // Rotación OFF
+                escPos = appendBytes(escPos, encoder.encode("   \n"));
 
-                // 6. Imprimir header con formato reforzado
-                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x45, 0x01])); // ESC E 1 (negrita ON)
+                // Header con formato explícito
+                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x45, 0x01])); // Negrita ON
                 escPos = appendBytes(escPos, encoder.encode(data.empresa + "\n"));
-                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x45, 0x00])); // ESC E 0 (negrita OFF)
+                escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x45, 0x00])); // Negrita OFF
 
                 escPos = appendBytes(escPos, encoder.encode(data.rutEmpresa + "\n"));
                 escPos = appendBytes(escPos, encoder.encode(data.boleta + "\n\n"));
