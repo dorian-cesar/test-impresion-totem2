@@ -100,24 +100,11 @@
                 escPos = appendBytes(escPos, new Uint8Array([0x1B, 0x61, 0x00])); // ESC a 0 - Left alignment
 
                 const lines = [
-                    "EMPRESA DE BUSES",
-                    "RUT: 12345678-9",
-                    "Boleta Electronica",
-                    "",
-                    `Boleto: -`,
-                    `Reserva: -`,
-                    `ID: -`,
-                    `RUT: -`,
-                    `Id Bus: -`,
-                    `Destino: -`,
-                    `Fecha: -`,
-                    `Asiento: -`,
-                    `Estado: -`,
-                    `Terminal: -`,
-                    `Total: -`,
-                    `Transaccion: -`,
-                    `Autorizacion: -`,
-                    `Tarjeta: -`,
+                    'EMPRESA DE BUSES',
+                    'RUT: 12345678-9',
+                    'Boleta Electronica',
+                    '',
+
                 ];
                 lines.forEach(line => {
                     escPos = appendBytes(escPos, encoder.encode(line + "\n"));
